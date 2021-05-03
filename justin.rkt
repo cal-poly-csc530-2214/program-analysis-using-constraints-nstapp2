@@ -1,25 +1,23 @@
 #lang typed/racket
 
 (define-type num (U Real Symbol))
-(define-type stmt (U seteq less-than greater-than greater-than-or-equal add assertion))
-
+(define-type stmt (U seteq bool-expr add assertion))
+(define-type bool-expr (U less-than less-than-or-equal greater-than greater-than-or-equal))
 (define-type Index Integer)
 
 (struct add ([target : Symbol] [left : num] [right : num])#:transparent)
 (struct seteq ([target : Symbol] [val : num])#:transparent)
 (struct less-than ([target : num] [compare-to : num])#:transparent)
+(struct less-than-or-equal ([target : num] [compare-to : num])#:transparent)
 (struct greater-than ([target : num] [compare-to : num])#:transparent)
 (struct greater-than-or-equal ([target : num] [compare-to : num])#:transparent)
 (struct node ([index : Index] [stmts : (Listof stmt)] [children : (Listof Integer)])#:transparent)
 (struct assertion ([st : (U greater-than greater-than-or-equal less-than)])#:transparent)
-
 (struct binop ([op : Symbol] [left : num] [right : num])#:transparent)
-
 (struct sub ([val : (U binop num)] [var : Symbol])#:transparent)
 ;; a -> b
-(struct impl ([a : (Listof (U 'true sub greater-than greater-than-or-equal less-than))]
-              [b : (Listof (U sub greater-than greater-than-or-equal less-than))])#:transparent)
-
+(struct impl ([a : (Listof (U 'true sub bool-expr))]
+              [b : (Listof (U sub bool-expr))])#:transparent)
 (struct edge ([parent : Index] [child : Index] [cond : (U Boolean 'N-A)])#:transparent)
 
 ;(define-type value (U Boolean num Void))
@@ -31,25 +29,26 @@
     [(cons first rest) (if (equal? i (node-index first)) first (get-node-by-index i rest))]
     ['() (error 'get-node-by-index "index ~a not found" i)]))
 
-(define (convert-stmt [st : stmt]) : (U sub greater-than greater-than-or-equal less-than)
+(define (convert-stmt [st : stmt]) : (U sub bool-expr)
   (match st
     [(assertion as) as]
     [(seteq targ val) (sub val targ)]
     [(add targ left right) (sub (binop '+ left right) targ)]
-    [_ (cast st (U greater-than greater-than-or-equal less-than))]))
+    [_ (cast st (U bool-expr))]))
 
 (define (make-first-impl [first-node : node]) : impl
   (impl (list 'true)
         (map convert-stmt (node-stmts first-node))))
 
 (define (opposite-day
-         [things : (Listof (U 'true sub greater-than greater-than-or-equal less-than))]) :
-  (Listof (U 'true sub greater-than greater-than-or-equal less-than))
+         [things : (Listof (U 'true sub bool-expr))]) : (Listof (U 'true sub bool-expr))
   (match things
     [(cons first rest)
      (match first
        [(less-than t c) (cons (greater-than-or-equal t c) (opposite-day rest))]
-       [(greater-than-or-equal t c) (cons (less-than t c) (opposite-day rest))])]
+       [(less-than-or-equal t c) (cons (greater-than t c) (opposite-day rest))]
+       [(greater-than-or-equal t c) (cons (less-than t c) (opposite-day rest))]
+       [(greater-than t c) (cons (less-than-or-equal t c) (opposite-day rest))])]
     ['() '()]))
 
 (define (make-impl [node1 : node] [node2 : node] [tf : (U 'N-A Boolean)]) : impl
@@ -91,7 +90,7 @@
     ['() '()]))
 
 (define (sub-within?
-         [stuff : (Listof (U 'true sub greater-than greater-than-or-equal less-than))]) : Boolean
+         [stuff : (Listof (U 'true sub bool-expr))]) : Boolean
   (match stuff
     [(cons (sub _ _) rest) #t]
     [(cons first rest) (sub-within? rest)]
