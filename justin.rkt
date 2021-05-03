@@ -134,6 +134,9 @@
 
 (convert-to-2nd-order-constraints CFG)
 
+;; print 2nd order constraints nicely
+;; convert to 1st order and call it a day
+
 
 
 
