@@ -12,7 +12,7 @@
 (struct greater-than ([target : num] [compare-to : num])#:transparent)
 (struct greater-than-or-equal ([target : num] [compare-to : num])#:transparent)
 (struct node ([index : Index] [stmts : (Listof stmt)] [children : (Listof Integer)])#:transparent)
-(struct assertion ([st : (U greater-than greater-than-or-equal less-than)])#:transparent)
+(struct assertion ([st : bool-expr])#:transparent)
 (struct binop ([op : Symbol] [left : num] [right : num])#:transparent)
 (struct sub ([val : (U binop num)] [var : Symbol])#:transparent)
 ;; a -> b
@@ -121,9 +121,9 @@
     (define (to-string-val [val : (U binop num)]) : String
       (match val
         [(binop sym left right) (string-append
-                                 (to-string-val left)
-                                 (~a sym)
-                                 (to-string-val right))]
+                                 "(" (to-string-val left) " "
+                                 (~a sym) " "
+                                 (to-string-val right) ")")]
         [other (~a other)]))
     (match a
       ['true "true"]
@@ -153,12 +153,6 @@
       (to-string-2nd-order-constraints rest))]
     ['() ""]))
 
-#;(define curr-index (box 0))
-#;(define (fresh-index) : Integer
-  (define res (unbox curr-index))
-  (set-box! curr-index (+ res 1))
-  res)
-
 (define curr-cond (box #t))
 (define (next-cond) : Boolean
   (define res (unbox curr-cond))
@@ -173,8 +167,25 @@
                  (add 'y 'y 1)) '(1))
    (node 3 (list (assertion (greater-than 'y 0))) '())))
 
-(convert-to-2nd-order-constraints CFG)
-(display (to-string-2nd-order-constraints (convert-to-2nd-order-constraints CFG)))
+(define CFG2
+  (list
+   (node 0 (list (seteq 'x 0)
+                 (seteq 'y 5)) '(1))
+   (node 1 (list (greater-than 'y 0)) '(2 3))
+   (node 2 (list (add 'x 'x 'y)
+                 (add 'y 'y -1)) '(1))
+   (node 3 (list (assertion (less-than-or-equal 'x 15))) '())))
+
+;(convert-to-2nd-order-constraints CFG)
+CFG
+(display
+ (to-string-2nd-order-constraints
+  (convert-to-2nd-order-constraints CFG)))
+(display "\n\n")
+CFG2
+(display
+ (to-string-2nd-order-constraints
+  (convert-to-2nd-order-constraints CFG2)))
 
 ;; print 2nd order constraints nicely
 ;; convert to 1st order and call it a day
