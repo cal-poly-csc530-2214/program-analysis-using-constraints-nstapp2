@@ -112,6 +112,47 @@
       (convert e cfg))
     (get-edges cfg))))
 
+(define (to-string-2nd-order-constraints [impls : (Listof impl)]) : String
+  (define (lst-to-str [lst : (Listof String)]) : String
+    (match lst
+      ['() ""]
+      [(cons first rest) (string-append first ", " (lst-to-str rest))]))
+  (define (to-string-impl-list-item [a : (U 'true sub bool-expr)]) : String
+    (define (to-string-val [val : (U binop num)]) : String
+      (match val
+        [(binop sym left right) (string-append
+                                 (to-string-val left)
+                                 (~a sym)
+                                 (to-string-val right))]
+        [other (~a other)]))
+    (match a
+      ['true "true"]
+      [(sub val var) (string-append
+                      (to-string-val val)
+                      "/"
+                      (~a var))]
+      [(less-than t c) (string-append (~a t) " < " (~a c))]
+      [(less-than-or-equal t c) (string-append (~a t) " <= " (~a c))]
+      [(greater-than t c) (string-append (~a t) " > " (~a c))]
+      [(greater-than-or-equal t c) (string-append (~a t) " >= " (~a c))]))
+  (match impls
+    [(cons (impl left right) rest)
+     (define leftstr (lst-to-str
+                      (map
+                       to-string-impl-list-item
+                       left)))
+     (define rightstr (lst-to-str
+                      (map
+                       to-string-impl-list-item
+                       right)))
+     (string-append
+      (substring leftstr 0 (- (string-length leftstr) 2))
+      " => "
+      (substring rightstr 0 (- (string-length rightstr) 2))
+      "\n"
+      (to-string-2nd-order-constraints rest))]
+    ['() ""]))
+
 #;(define curr-index (box 0))
 #;(define (fresh-index) : Integer
   (define res (unbox curr-index))
@@ -133,6 +174,7 @@
    (node 3 (list (assertion (greater-than 'y 0))) '())))
 
 (convert-to-2nd-order-constraints CFG)
+(display (to-string-2nd-order-constraints (convert-to-2nd-order-constraints CFG)))
 
 ;; print 2nd order constraints nicely
 ;; convert to 1st order and call it a day
