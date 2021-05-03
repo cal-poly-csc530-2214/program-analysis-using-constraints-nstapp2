@@ -2,7 +2,7 @@
 
 Despite the name of this repo this is Justin Privitera's work. Forgive the code quality :P
 
-Oh gosh, it's monday already. What did I do? I made a program that will take a CFG and convert to 2nd order constraints. I was hoping to go further but it seems time has escaped me.
+Oh gosh, it's monday already. What did I do? I made a program that will take a CFG and convert to 2nd order constraints. I was hoping to go further but it seems time has escaped me. If you use your imagination and tack on the 'I's then the generated constraints look correct.
 
 ### A rackety CFG: (taken from the first example in the paper)
 	(list
